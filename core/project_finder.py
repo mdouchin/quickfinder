@@ -307,16 +307,19 @@ class ProjectFinder(AbstractFinder):
             evaluated = unicode(expression.evaluate(context))
             if expression.hasEvalError():
                 continue
-            if f.geometry() is None or f.geometry().centroid() is None:
+            try:
+                if f.geometry() is None or f.geometry().centroid() is None:
+                    continue
+                centroid = f.geometry().centroid().asPoint()
+                if geometryStorage == 'wkb':
+                    geom = binascii.b2a_hex(f.geometry().asWkb())
+                elif geometryStorage == 'wkt':
+                    geom = f.geometry().exportToWkt()
+                elif geometryStorage == 'extent':
+                    geom = f.geometry().boundingBox().asWktPolygon()
+                yield ( evaluated, centroid.x(), centroid.y(), geom )
+            except:
                 continue
-            centroid = f.geometry().centroid().asPoint()
-            if geometryStorage == 'wkb':
-                geom = binascii.b2a_hex(f.geometry().asWkb())
-            elif geometryStorage == 'wkt':
-                geom = f.geometry().exportToWkt()
-            elif geometryStorage == 'extent':
-                geom = f.geometry().boundingBox().asWktPolygon()
-            yield ( evaluated, centroid.x(), centroid.y(), geom )
 
     def stop_record(self):
         self.stopLoop = True
